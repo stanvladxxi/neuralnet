@@ -1,0 +1,43 @@
+from keras import regularizers
+from keras.layers import Dropout, BatchNormalization
+from keras.callbacks import EarlyStopping
+from keras.applications import VGG16
+from keras.models import Sequential
+from keras.layers import Flatten, Dense
+from tensorflow import keras
+
+# Create a sequential model
+model = Sequential()
+
+# Add a dense layer with L2 regularization
+model.add(Dense(64, kernel_regularizer=regularizers.l2(0.01)))
+
+# Add a dropout layer
+model.add(Dropout(0.5))
+
+# Add a batch normalization layer
+model.add(BatchNormalization())
+
+# Add a VGG16 convolutional base
+conv_base = VGG16(weights='imagenet', include_top=False, input_shape=(150, 150, 3))
+model.add(conv_base)
+
+# Add a flatten layer
+model.add(Flatten())
+
+# Add a dense layer with ReLU activation
+model.add(Dense(256, activation='relu'))
+
+# Add a dense layer with sigmoid activation
+model.add(Dense(1, activation='sigmoid'))
+
+# Define early stopping
+early_stopping = EarlyStopping(monitor='val_loss', patience=10)
+
+# Define Pruning schedule
+pruning_schedule = keras.optimizers.schedules.PruningSchedule()
+pruning_schedule.prune_begin()
+
+# Compile and fit the model
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+model.fit(X_train, y_train, callbacks=[early_stopping,pruning_schedule])
